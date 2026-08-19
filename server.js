@@ -1,14 +1,17 @@
 const path = require('path');
-const express = require('express');
-const session = require('express-session');
-const db = require('./db');
 
 // Carga variables desde .env si existe el paquete dotenv; si no, usa process.env tal cual
+// IMPORTANTE: esto debe ir ANTES de requerir './db', porque db.js lee
+// process.env.DATABASE_URL al momento de crear la conexión.
 try {
   require('dotenv').config();
 } catch (e) {
   // dotenv es opcional; si no esta instalado, seguimos con las variables del entorno
 }
+
+const express = require('express');
+const session = require('express-session');
+const db = require('./db');
 
 const app = express();
 
@@ -52,6 +55,11 @@ function getBaseUrl(req) {
   return process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 }
 
+// Envuelve rutas async para mandar cualquier error a un 500 legible
+function wrap(fn) {
+  return (req, res, next) => fn(req, res, next).catch(next);
+}
+
 // ---------- Home: redirige al panel ----------
 app.get('/', (req, res) => res.redirect('/admin'));
 
@@ -74,82 +82,118 @@ app.get('/admin/logout', (req, res) => {
 });
 
 // ---------- Panel de administración ----------
-app.get('/admin', requireAuth, (req, res) => {
-  const guests = db.getAllGuests();
-  const stats = db.getStats();
-  res.render('panel', {
-    guests,
-    stats,
-    baseUrl: getBaseUrl(req),
-    event: EVENT,
-  });
-});
+app.get(
+  '/admin',
+  requireAuth,
+  wrap(async (req, res) => {
+    const guests = await db.getAllGuests();
+    const stats = await db.getStats();
+    res.render('panel', {
+      guests,
+      stats,
+      baseUrl: getBaseUrl(req),
+      event: EVENT,
+    });
+  })
+);
 
-app.post('/admin/guests', requireAuth, (req, res) => {
-  const { nombre, pases_asignados } = req.body;
-  if (nombre && nombre.trim()) {
-    db.addGuest({ nombre, pases_asignados });
-  }
-  res.redirect('/admin');
-});
+app.post(
+  '/admin/guests',
+  requireAuth,
+  wrap(async (req, res) => {
+    const { nombre, pases_asignados } = req.body;
+    if (nombre && nombre.trim()) {
+      await db.addGuest({ nombre, pases_asignados });
+    }
+    res.redirect('/admin');
+  })
+);
 
-app.post('/admin/guests/:id/delete', requireAuth, (req, res) => {
-  db.deleteGuest(req.params.id);
-  res.redirect('/admin');
-});
+app.post(
+  '/admin/guests/:id/delete',
+  requireAuth,
+  wrap(async (req, res) => {
+    await db.deleteGuest(req.params.id);
+    res.redirect('/admin');
+  })
+);
 
 // ---------- Exportar CSV ----------
-app.get('/admin/export.csv', requireAuth, (req, res) => {
-  const guests = db.getAllGuests();
-  const header = [
-    'Nombre',
-    'Pases asignados',
-    'Estado',
-    'Pases confirmados',
-    'Mensaje',
-    'Respondio el',
-  ];
-  const rows = guests.map((g) => [
-    g.nombre,
-    g.pases_asignados,
-    g.estado,
-    g.pases_confirmados,
-    (g.mensaje || '').replace(/[\r\n,]+/g, ' '),
-    g.responded_at || '',
-  ]);
-  const csv = [header, ...rows]
-    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
-    .join('\n');
+app.get(
+  '/admin/export.csv',
+  requireAuth,
+  wrap(async (req, res) => {
+    const guests = await db.getAllGuests();
+    const header = [
+      'Nombre',
+      'Pases asignados',
+      'Estado',
+      'Pases confirmados',
+      'Mensaje',
+      'Respondio el',
+    ];
+    const rows = guests.map((g) => [
+      g.nombre,
+      g.pases_asignados,
+      g.estado,
+      g.pases_confirmados,
+      (g.mensaje || '').replace(/[\r\n,]+/g, ' '),
+      g.responded_at || '',
+    ]);
+    const csv = [header, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
 
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader(
-    'Content-Disposition',
-    'attachment; filename="invitados-halloween.csv"'
-  );
-  res.send('\uFEFF' + csv);
-});
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="invitados-halloween.csv"'
+    );
+    res.send('\uFEFF' + csv);
+  })
+);
 
 // ---------- Invitación pública personalizada ----------
-app.get('/invite/:code', (req, res) => {
-  const guest = db.getGuestByCode(req.params.code);
-  if (!guest) {
-    return res.status(404).render('not-found', { event: EVENT });
-  }
-  res.render('invite', { guest, event: EVENT, submitted: false });
+app.get(
+  '/invite/:code',
+  wrap(async (req, res) => {
+    const guest = await db.getGuestByCode(req.params.code);
+    if (!guest) {
+      return res.status(404).render('not-found', { event: EVENT });
+    }
+    res.render('invite', { guest, event: EVENT, submitted: false });
+  })
+);
+
+app.post(
+  '/invite/:code/rsvp',
+  wrap(async (req, res) => {
+    const { estado, pases_confirmados, mensaje } = req.body;
+    const guest = await db.updateRsvp(req.params.code, {
+      estado,
+      pases_confirmados,
+      mensaje,
+    });
+    if (!guest) return res.status(404).render('not-found', { event: EVENT });
+    res.render('invite', { guest, event: EVENT, submitted: true });
+  })
+);
+
+// ---------- Manejo de errores ----------
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).send('Ocurrió un error. Revisa los logs del servidor.');
 });
 
-app.post('/invite/:code/rsvp', (req, res) => {
-  const { estado, pases_confirmados, mensaje } = req.body;
-  const guest = db.updateRsvp(req.params.code, {
-    estado,
-    pases_confirmados,
-    mensaje,
+// ---------- Arranque: crea la tabla si no existe, luego escucha ----------
+db.initDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Panel de invitaciones corriendo en http://localhost:${PORT}`);
+      console.log(`Admin: http://localhost:${PORT}/admin/login`);
+    });
+  })
+  .catch((err) => {
+    console.error('No se pudo conectar/inicializar la base de datos:', err);
+    process.exit(1);
   });
-  if (!guest) return res.status(404).render('not-found', { event: EVENT });
-  res.render('invite', { guest, event: EVENT, submitted: true });
-});
-
-app.listen(PORT, () => {
-  console.log(`Panel de invitaciones corriendo en http://localhost:${PORT}`);
-  console.log(`Admin: http://localhost:${PORT}/admin/login`);
-});

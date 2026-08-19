@@ -34,6 +34,37 @@ npm start
 Abre `http://localhost:3000/admin/login` con la contraseña que pusiste en
 `.env`.
 
+## Base de datos: PostgreSQL
+
+El proyecto guarda todo en PostgreSQL (tabla `guests`, se crea sola la
+primera vez que arranca el servidor — no hay que correr ningún script de
+migración a mano).
+
+### En Render (recomendado)
+
+1. En el Dashboard de Render: **New → PostgreSQL**. Dale un nombre (ej.
+   `fiesta-halloween-db`) y crea la base. Render te da un mes gratis y
+   luego cobra un plan chico si la quieres conservar.
+2. Cuando esté lista, copia el **"Internal Database URL"** (si tu Web
+   Service y la base están en la misma región de Render, es más rápido
+   que la External URL).
+3. En tu Web Service (el de este proyecto) → pestaña **Environment** →
+   agrega la variable `DATABASE_URL` con ese valor.
+4. Haz un **Manual Deploy** o simplemente vuelve a hacer push — al
+   arrancar, el servidor crea la tabla `guests` automáticamente.
+
+Con esto, tus invitados y sus confirmaciones sobreviven cualquier
+redeploy, reinicio o cambio de código futuro — ya no dependen del disco
+del contenedor.
+
+### En local (para probar)
+
+Instala Postgres o usa un contenedor Docker, luego en tu `.env`:
+
+```
+DATABASE_URL=postgres://usuario:password@localhost:5432/nombre_bd
+```
+
 ## Editar los datos del evento
 
 Todo está centralizado en `server.js`, en el objeto `EVENT` (arriba del
@@ -71,22 +102,19 @@ const EVENT = {
 3. Build command: `npm install`
 4. Start command: `npm start`
 5. En "Environment", agrega las variables `ADMIN_PASSWORD`,
-   `SESSION_SECRET` y opcionalmente `BASE_URL` (la URL pública que te da
-   Render, para que los links generados en el panel sean correctos).
+   `SESSION_SECRET`, `DATABASE_URL` (ver sección "Base de datos" arriba)
+   y opcionalmente `BASE_URL` (la URL pública que te da Render, para que
+   los links generados en el panel sean correctos).
 
-### ⚠️ Importante sobre los datos
+### Sobre los datos
 
-Los invitados se guardan en `data/db.json` (archivo local, sin necesidad de
-base de datos externa). **Igual que con tus bots de trading**: si en Render
-usas el plan gratuito, el disco no es persistente entre deploys — cada vez
-que hagas un nuevo deploy se puede perder ese archivo. Para esta lista de
-invitados (dato único de un evento) probablemente no es crítico, pero si
-quieres que sea 100% seguro:
+Con `DATABASE_URL` configurado, los invitados se guardan en PostgreSQL y
+sobreviven redeploys sin problema — no necesitas hacer nada especial.
 
-- Usa un Render "Persistent Disk" (plan de pago), o
-- Cámbialo a PostgreSQL/MongoDB Atlas como en `astrid-sistema` — el código
-  está aislado en `db.js`, así que solo tendrías que reemplazar ese
-  archivo sin tocar rutas ni vistas.
+Si en algún momento decides NO usar Postgres y correr solo con el disco
+local (no recomendado para producción), ten en cuenta que en el plan Free
+de Render el disco no es persistente entre deploys — cada push puede
+borrar los datos.
 
 ## Estructura
 

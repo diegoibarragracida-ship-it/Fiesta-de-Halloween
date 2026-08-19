@@ -1,89 +1,105 @@
-const fs = require('fs');
-const path = require('path');
+const { Pool } = require('pg');
 const crypto = require('crypto');
 
-const DATA_DIR = path.join(__dirname, 'data');
-const DB_PATH = path.join(DATA_DIR, 'db.json');
+// DATABASE_URL la da Render automáticamente al conectar una base de
+// datos Postgres a este servicio. En local, ponla en tu .env.
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+});
 
-function ensureDb() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({ guests: [] }, null, 2));
-  }
-}
-
-function readDb() {
-  ensureDb();
-  return JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
-}
-
-function writeDb(data) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+async function initDb() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guests (
+      id UUID PRIMARY KEY,
+      code TEXT UNIQUE NOT NULL,
+      nombre TEXT NOT NULL,
+      pases_asignados INTEGER NOT NULL DEFAULT 1,
+      estado TEXT NOT NULL DEFAULT 'pendiente',
+      pases_confirmados INTEGER NOT NULL DEFAULT 0,
+      mensaje TEXT DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      responded_at TIMESTAMPTZ
+    );
+  `);
 }
 
 function genCode() {
   return crypto.randomBytes(4).toString('hex');
 }
 
+function mapRow(r) {
+  if (!r) return null;
+  return {
+    id: r.id,
+    code: r.code,
+    nombre: r.nombre,
+    pases_asignados: r.pases_asignados,
+    estado: r.estado,
+    pases_confirmados: r.pases_confirmados,
+    mensaje: r.mensaje || '',
+    created_at: r.created_at,
+    responded_at: r.responded_at,
+  };
+}
+
 module.exports = {
-  getAllGuests() {
-    return readDb().guests.sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  initDb,
+
+  async getAllGuests() {
+    const { rows } = await pool.query(
+      'SELECT * FROM guests ORDER BY created_at DESC'
     );
+    return rows.map(mapRow);
   },
 
-  getGuestByCode(code) {
-    return readDb().guests.find((g) => g.code === code) || null;
+  async getGuestByCode(code) {
+    const { rows } = await pool.query(
+      'SELECT * FROM guests WHERE code = $1',
+      [code]
+    );
+    return mapRow(rows[0]);
   },
 
-  addGuest({ nombre, pases_asignados }) {
-    const data = readDb();
-    const guest = {
-      id: crypto.randomUUID(),
-      code: genCode(),
-      nombre: String(nombre).trim(),
-      pases_asignados: Math.max(1, Number(pases_asignados) || 1),
-      estado: 'pendiente', // pendiente | confirmado | tal-vez | no-asiste
-      pases_confirmados: 0,
-      mensaje: '',
-      created_at: new Date().toISOString(),
-      responded_at: null,
-    };
-    data.guests.push(guest);
-    writeDb(data);
-    return guest;
+  async addGuest({ nombre, pases_asignados }) {
+    const id = crypto.randomUUID();
+    const code = genCode();
+    const pases = Math.max(1, Number(pases_asignados) || 1);
+    const { rows } = await pool.query(
+      `INSERT INTO guests (id, code, nombre, pases_asignados)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [id, code, String(nombre).trim(), pases]
+    );
+    return mapRow(rows[0]);
   },
 
-  updateRsvp(code, { estado, pases_confirmados, mensaje }) {
-    const data = readDb();
-    const guest = data.guests.find((g) => g.code === code);
-    if (!guest) return null;
+  async updateRsvp(code, { estado, pases_confirmados, mensaje }) {
+    const existing = await this.getGuestByCode(code);
+    if (!existing) return null;
 
-    guest.estado = estado;
+    let pases;
     if (estado === 'no-asiste') {
-      guest.pases_confirmados = 0;
+      pases = 0;
     } else {
       const requested = Number(pases_confirmados) || 1;
-      guest.pases_confirmados = Math.min(
-        Math.max(1, requested),
-        guest.pases_asignados
-      );
+      pases = Math.min(Math.max(1, requested), existing.pases_asignados);
     }
-    guest.mensaje = (mensaje || '').slice(0, 300);
-    guest.responded_at = new Date().toISOString();
 
-    writeDb(data);
-    return guest;
+    const { rows } = await pool.query(
+      `UPDATE guests
+       SET estado = $1, pases_confirmados = $2, mensaje = $3, responded_at = now()
+       WHERE code = $4 RETURNING *`,
+      [estado, pases, (mensaje || '').slice(0, 300), code]
+    );
+    return mapRow(rows[0]);
   },
 
-  deleteGuest(id) {
-    const data = readDb();
-    data.guests = data.guests.filter((g) => g.id !== id);
-    writeDb(data);
+  async deleteGuest(id) {
+    await pool.query('DELETE FROM guests WHERE id = $1', [id]);
   },
 
-  getStats() {
-    const guests = readDb().guests;
+  async getStats() {
+    const guests = await this.getAllGuests();
     const confirmados = guests.filter((g) => g.estado === 'confirmado');
     const talVez = guests.filter((g) => g.estado === 'tal-vez');
     const noAsisten = guests.filter((g) => g.estado === 'no-asiste');
