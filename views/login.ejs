@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acceso — Panel de Invitaciones</title>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(ellipse at 50% 0%, #2a1440 0%, #170b26 45%, #0a0611 100%);
+    font-family:'Nunito',sans-serif; color:#f3ead9;
+  }
+  .box{
+    background:#1f0f30; border:1px solid rgba(255,122,26,0.25); border-radius:16px;
+    padding:36px 30px; width:340px; box-shadow:0 20px 50px rgba(0,0,0,0.5);
+  }
+  h1{ font-family:'Creepster',cursive; font-weight:400; text-align:center; color:#ff7a1a; font-size:32px; margin:0 0 6px; }
+  p.sub{ text-align:center; color:#cfc3ae; font-size:13px; margin:0 0 24px; }
+  input{
+    width:100%; padding:12px 14px; border-radius:10px; margin-bottom:14px;
+    background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.12); color:#f3ead9; font-size:14px;
+  }
+  button{
+    width:100%; padding:13px; border:none; border-radius:10px; cursor:pointer;
+    background:linear-gradient(180deg,#d81f2f,#8c1620); color:#f3ead9; font-weight:800; font-size:14px;
+  }
+  .error{ background:rgba(216,31,47,0.15); border:1px solid rgba(216,31,47,0.4); color:#f3ead9;
+    padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:14px; text-align:center; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>🎃</h1>
+    <p class="sub">Panel de invitaciones — <%= event.tituloEvento %></p>
+    <% if (error) { %><div class="error"><%= error %></div><% } %>
+    <form method="POST" action="/admin/login">
+      <input type="password" name="password" placeholder="Contraseña de acceso" required autofocus>
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
+</body>
+</html>

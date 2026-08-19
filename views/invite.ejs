@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= event.tituloEvento %> — Invitación de <%= guest.nombre %></title>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-void:#0a0611; --bg-deep:#170b26; --bg-panel:#1f0f30;
+    --pumpkin:#ff7a1a; --pumpkin-glow:#ffb347; --slime:#6bff6b;
+    --blood:#8c1620; --blood-bright:#d81f2f; --bone:#f3ead9; --bone-dim:#cfc3ae;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: radial-gradient(ellipse at 50% -10%, #2a1440 0%, var(--bg-deep) 45%, var(--bg-void) 100%);
+    color:var(--bone); font-family:'Nunito',sans-serif; overflow-x:hidden; position:relative; min-height:100vh;
+  }
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; } }
+
+  .sky{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .star{ position:absolute; width:2px; height:2px; background:var(--bone); border-radius:50%; opacity:.5; animation:twinkle 3.5s ease-in-out infinite; }
+  @keyframes twinkle{ 0%,100%{opacity:.15;} 50%{opacity:.9;} }
+  .moon{
+    position:absolute; top:4%; right:8%; width:110px; height:110px; border-radius:50%;
+    background: radial-gradient(circle at 35% 35%, #fff7dd, var(--pumpkin-glow) 70%, #b5771f 100%);
+    box-shadow: 0 0 60px 20px rgba(255,179,71,0.35), 0 0 140px 50px rgba(255,122,26,0.12);
+  }
+  .bat{ position:absolute; font-size:20px; animation:fly linear infinite; opacity:.85; }
+  @keyframes fly{
+    0%{ transform:translate(-10vw,10vh) scale(0.8) rotate(0deg); }
+    50%{ transform:translate(55vw,-4vh) scale(1.1) rotate(-6deg); }
+    100%{ transform:translate(120vw,14vh) scale(0.9) rotate(3deg); }
+  }
+
+  .lightning{
+    position:fixed; inset:0; z-index:3; pointer-events:none;
+    background: #f3ead9; opacity:0;
+  }
+  @keyframes strike{
+    0%{ opacity:0; }
+    2%{ opacity:.85; }
+    4%{ opacity:.1; }
+    6%{ opacity:.6; }
+    8%{ opacity:0; }
+    100%{ opacity:0; }
+  }
+  .lightning.active{ animation: strike 900ms ease-out; }
+
+  .thunder-bolt{
+    position:fixed; z-index:3; pointer-events:none; opacity:0; top:0;
+  }
+  @keyframes boltFlash{
+    0%{ opacity:0; }
+    3%{ opacity:1; }
+    6%{ opacity:0; }
+    9%{ opacity:.8; }
+    12%{ opacity:0; }
+    100%{ opacity:0; }
+  }
+  .thunder-bolt.active{ animation: boltFlash 900ms ease-out; }
+  .fog{
+    position:fixed; bottom:0; left:0; width:200%; height:120px; z-index:1; pointer-events:none;
+    background: linear-gradient(180deg, transparent, rgba(23,11,38,0.85));
+    opacity:.8;
+  }
+  .fog-layer{
+    position:fixed; bottom:-20px; width:220%; height:90px; z-index:1; pointer-events:none; opacity:.35;
+    background: radial-gradient(ellipse at center, rgba(243,234,217,0.25), transparent 70%);
+    animation: drift 30s linear infinite;
+  }
+  @keyframes drift{ from{ transform:translateX(0);} to{ transform:translateX(-20%);} }
+
+  .web{ position:fixed; width:170px; height:170px; z-index:1; pointer-events:none; stroke:rgba(243,234,217,0.18); stroke-width:1; fill:none; }
+  .web.tl{ top:-10px; left:-10px; }
+  .web.tr{ top:-10px; right:-10px; transform:scaleX(-1); }
+
+  .spider{ position:fixed; top:-40px; z-index:2; pointer-events:none; animation:dangle 5s ease-in-out infinite; }
+  .spider .thread{ width:1px; background:rgba(243,234,217,0.18); margin:0 auto; }
+  @keyframes dangle{ 0%,100%{ transform:rotate(-8deg);} 50%{ transform:rotate(8deg);} }
+
+  .ghost{ position:fixed; z-index:1; pointer-events:none; opacity:.9; animation:float 7s ease-in-out infinite; filter:drop-shadow(0 0 12px rgba(255,255,255,0.15)); }
+  @keyframes float{ 0%,100%{ transform:translateY(0) translateX(0);} 50%{ transform:translateY(-24px) translateX(10px);} }
+
+  .cat{ position:fixed; z-index:2; pointer-events:none; opacity:.9; }
+
+  .candy-border{
+    position:relative; height:14px; z-index:2;
+    background: repeating-linear-gradient(135deg, #ff7a1a 0 10px, #f3ead9 10px 20px, #8c1620 20px 30px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  .wrap{ position:relative; z-index:5; max-width:720px; margin:0 auto; padding:0 20px 100px; }
+
+  .hero{ text-align:center; padding:44px 0 10px; }
+  .eyebrow{ letter-spacing:.3em; text-transform:uppercase; font-size:12px; color:var(--slime); font-weight:800; margin-bottom:12px; }
+  h1.title{
+    font-family:'Creepster',cursive; font-weight:400; font-size:clamp(46px,11vw,80px); line-height:1; margin:0 0 8px;
+    color:var(--pumpkin); text-shadow:0 0 10px rgba(255,122,26,0.6), 0 0 32px rgba(255,122,26,0.35), 3px 3px 0 #4a0e12;
+    animation: flicker 4s infinite;
+  }
+  @keyframes flicker{ 0%,19%,21%,23%,54%,56%,100%{opacity:1;} 20%,22%,55%{opacity:.78;} }
+  .subtitle{ font-size:16px; color:var(--bone-dim); max-width:460px; margin:0 auto 6px; }
+  .host-line{ font-size:13px; color:var(--pumpkin-glow); font-weight:800; margin-bottom:22px; }
+
+  .guest-banner{
+    background: linear-gradient(135deg, rgba(255,122,26,0.15), rgba(140,22,32,0.15));
+    border:1px solid rgba(255,122,26,0.35); border-radius:14px; padding:16px 20px; text-align:center; margin:0 0 24px;
+  }
+  .guest-banner .hi{ font-size:13px; color:var(--bone-dim); text-transform:uppercase; letter-spacing:.08em; }
+  .guest-banner .name{ font-family:'Nosifer',cursive; font-size:20px; color:var(--bone); margin:6px 0; }
+  .guest-banner .passes{ font-size:14px; color:var(--slime); font-weight:800; }
+
+  .decor-row{ display:flex; justify-content:center; align-items:flex-end; gap:26px; margin:6px 0 24px; }
+  .decor-row svg{ display:block; }
+
+  .tombstone-wrap{ display:flex; justify-content:center; margin:6px 0 4px; }
+  .tombstone-btn{
+    background:none; border:none; padding:0; cursor:pointer;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+    transition: transform .2s ease, filter .2s ease;
+    animation: tombstone-pulse 3s ease-in-out infinite;
+  }
+  .tombstone-btn:hover{
+    transform: translateY(-4px) scale(1.03);
+    filter: drop-shadow(0 16px 28px rgba(0,0,0,0.6)) drop-shadow(0 0 18px rgba(255,122,26,0.35));
+  }
+  .tombstone-btn:active{ transform: translateY(2px) scale(0.97) rotate(-1deg); }
+  @keyframes tombstone-pulse{
+    0%,100%{ filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); }
+    50%{ filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(255,122,26,0.25)); }
+  }
+  .tombstone-btn.shake{ animation: tombstone-shake .5s ease; }
+  @keyframes tombstone-shake{
+    0%,100%{ transform: translateX(0); }
+    20%{ transform: translateX(-6px) rotate(-2deg); }
+    40%{ transform: translateX(6px) rotate(2deg); }
+    60%{ transform: translateX(-4px) rotate(-1deg); }
+    80%{ transform: translateX(4px) rotate(1deg); }
+  }
+  .tombstone-cta{
+    text-align:center; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color: var(--pumpkin-glow); font-weight:800; margin:10px 0 0; opacity:.9;
+    animation: cta-blink 2s ease-in-out infinite;
+  }
+  @keyframes cta-blink{ 0%,100%{ opacity:.5; } 50%{ opacity:1; } }
+  .hint{ text-align:center; font-size:12px; color:var(--bone-dim); opacity:.7; margin:8px 0 26px; }
+
+  .card{
+    background: linear-gradient(180deg, var(--bg-panel), #150a24);
+    border:1px solid rgba(255,122,26,0.25); border-radius:18px; padding:28px 24px; margin:26px 0;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 40px rgba(140,22,32,0.08);
+    position:relative;
+  }
+  .card::before{ content:'🕸️'; position:absolute; top:-16px; left:-10px; font-size:26px; transform:rotate(-15deg); }
+  .card::after{ content:'🕸️'; position:absolute; bottom:-16px; right:-10px; font-size:26px; transform:rotate(165deg); }
+  .card h2{ font-family:'Nosifer',cursive; font-weight:400; font-size:22px; color:var(--blood-bright); margin:0 0 18px; text-align:center; text-shadow:0 0 8px rgba(216,31,47,0.5); }
+
+  .details-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .detail{ background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:14px 16px; }
+  .detail .label{ font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--slime); font-weight:800; }
+  .detail .value{ font-size:15px; margin-top:4px; font-weight:700; color:var(--bone); }
+  @media (max-width:480px){ .details-grid{ grid-template-columns:1fr; } }
+
+  .map-btn{
+    display:block; text-align:center; margin-top:16px; text-decoration:none;
+    background:linear-gradient(180deg,#3a6b3a,#254a25); color:var(--bone); font-weight:800; font-size:14px;
+    padding:13px; border-radius:10px;
+  }
+  .map-btn:hover{ filter:brightness(1.1); }
+
+  .costume-notice{
+    margin-top:20px; padding:14px 16px; border-radius:12px;
+    background:rgba(216,31,47,0.1); border:1px solid rgba(216,31,47,0.35); text-align:center; font-size:14px; color:var(--bone);
+  }
+  .costume-notice strong{ color:var(--pumpkin-glow); }
+
+  .countdown{ display:flex; justify-content:center; gap:12px; margin:26px 0 6px; flex-wrap:wrap; }
+  .cd-box{
+    background: radial-gradient(circle at 50% 0%, #2a0e12, #150609);
+    border:1px solid rgba(216,31,47,0.4); border-radius:12px; width:74px; padding:12px 0; text-align:center;
+    box-shadow:0 0 18px rgba(140,22,32,0.35);
+  }
+  .cd-box .num{ font-size:26px; font-weight:800; color:var(--pumpkin-glow); font-variant-numeric:tabular-nums; }
+  .cd-box .lbl{ font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--bone-dim); margin-top:2px; }
+
+  .rsvp .sub{ text-align:center; color:var(--bone-dim); font-size:13px; margin-bottom:22px; }
+  form{ display:flex; flex-direction:column; gap:16px; }
+  .field label{ display:block; font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--slime); margin-bottom:6px; }
+  .field input[type=text], .field textarea{
+    width:100%; padding:12px 14px; border-radius:10px; background:rgba(0,0,0,0.35);
+    border:1px solid rgba(255,255,255,0.12); color:var(--bone); font-size:14px;
+  }
+  .field textarea{ resize:vertical; min-height:70px; }
+
+  .choices{ display:flex; gap:10px; }
+  .choice-btn{
+    flex:1; padding:12px 8px; border-radius:10px; cursor:pointer; background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.12); color:var(--bone-dim); font-weight:700; font-size:13px; transition:all .15s ease;
+  }
+  .choice-btn:hover{ border-color:var(--pumpkin); }
+  .choice-btn.active{ background:linear-gradient(180deg,var(--pumpkin),#c85a0a); color:#1a0700; border-color:var(--pumpkin); box-shadow:0 0 16px rgba(255,122,26,0.45); }
+  .choice-btn.active.tal-vez{ background:linear-gradient(180deg,#ffb347,#c8842a); color:#2a1400; }
+  .choice-btn.active.no{ background:linear-gradient(180deg,var(--blood-bright),var(--blood)); color:var(--bone); }
+
+  .stepper{ display:flex; align-items:center; gap:14px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:8px 14px; width:fit-content; }
+  .stepper button{ width:30px; height:30px; border-radius:50%; border:none; cursor:pointer; background:var(--pumpkin); color:#1a0700; font-weight:800; font-size:16px; }
+  .stepper span{ min-width:60px; text-align:center; font-weight:800; }
+
+  .submit-btn{
+    margin-top:6px; padding:15px; border-radius:12px; border:none; cursor:pointer;
+    background:linear-gradient(180deg,var(--blood-bright),var(--blood)); color:var(--bone);
+    font-family:'Nosifer',cursive; font-weight:400; font-size:16px; letter-spacing:.04em; box-shadow:0 10px 30px rgba(140,22,32,0.45);
+  }
+
+  .confirm{ text-align:center; padding:10px 4px; }
+  .confirm .icon{ font-size:44px; margin-bottom:10px; }
+  .confirm h3{ font-family:'Creepster',cursive; font-weight:400; font-size:28px; color:var(--slime); margin:0 0 8px; }
+  .confirm p{ color:var(--bone-dim); font-size:14px; margin:0 0 8px; }
+  .confirm .again{ display:inline-block; margin-top:14px; color:var(--bone-dim); font-size:12px; text-decoration:underline; cursor:pointer; }
+
+  footer{ text-align:center; margin-top:34px; color:var(--bone-dim); font-size:12px; opacity:.6; }
+</style>
+</head>
+<body>
+
+<div class="sky" id="sky"><div class="moon"></div></div>
+<div class="lightning" id="lightning"></div>
+<svg class="thunder-bolt" id="thunder-bolt" width="90" height="260" viewBox="0 0 90 260" style="right:12%;">
+  <polygon points="55,0 15,120 45,120 25,260 80,100 48,100" fill="#f3ead9" opacity="0.95"/>
+</svg>
+<div class="fog-layer" style="left:-10%;"></div>
+<div class="fog"></div>
+
+<svg class="web tl" viewBox="0 0 180 180"><path d="M0,0 L180,0 M0,0 L0,180 M0,0 L180,180 M0,0 L60,180 M0,0 L180,60"/><path d="M0,20 Q20,20 20,0 M0,55 Q55,55 55,0 M0,95 Q95,95 95,0 M0,140 Q140,140 140,0"/></svg>
+<svg class="web tr" viewBox="0 0 180 180"><path d="M0,0 L180,0 M0,0 L0,180 M0,0 L180,180 M0,0 L60,180 M0,0 L180,60"/><path d="M0,20 Q20,20 20,0 M0,55 Q55,55 55,0 M0,95 Q95,95 95,0 M0,140 Q140,140 140,0"/></svg>
+
+<div class="spider" style="left:12%;">
+  <div class="thread" style="height:70px;"></div>
+  <svg width="34" height="30" viewBox="0 0 34 30"><g fill="#0d0d0d">
+    <ellipse cx="17" cy="16" rx="7" ry="9"/><circle cx="17" cy="7" r="4.5"/>
+    <line x1="10" y1="10" x2="1" y2="4" stroke="#0d0d0d" stroke-width="1.6"/>
+    <line x1="10" y1="15" x2="0" y2="14" stroke="#0d0d0d" stroke-width="1.6"/>
+    <line x1="10" y1="20" x2="1" y2="26" stroke="#0d0d0d" stroke-width="1.6"/>
+    <line x1="24" y1="10" x2="33" y2="4" stroke="#0d0d0d" stroke-width="1.6"/>
+    <line x1="24" y1="15" x2="34" y2="14" stroke="#0d0d0d" stroke-width="1.6"/>
+    <line x1="24" y1="20" x2="33" y2="26" stroke="#0d0d0d" stroke-width="1.6"/>
+    <circle cx="15" cy="6" r="1" fill="#ff7a1a"/><circle cx="19" cy="6" r="1" fill="#ff7a1a"/>
+  </g></svg>
+</div>
+
+<div class="ghost" style="left:6%; top:22%; width:50px; animation-delay:.3s;">
+  <svg viewBox="0 0 64 74" width="50"><path d="M32 2C15 2 4 16 4 34v30c3-3 7-3 10 0s7 3 10 0 7-3 10 0 7 3 10 0 7-3 10 0V34C60 16 49 2 32 2z" fill="#f3ead9" opacity="0.92"/><ellipse cx="23" cy="30" rx="4" ry="5.5" fill="#170b26"/><ellipse cx="41" cy="30" rx="4" ry="5.5" fill="#170b26"/><path d="M24 46q8 6 16 0" stroke="#170b26" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+</div>
+<div class="ghost" style="right:8%; top:14%; width:40px; animation-delay:1.4s; animation-duration:8.5s;">
+  <svg viewBox="0 0 64 74" width="40"><path d="M32 2C15 2 4 16 4 34v30c3-3 7-3 10 0s7 3 10 0 7-3 10 0 7 3 10 0 7-3 10 0V34C60 16 49 2 32 2z" fill="#f3ead9" opacity="0.85"/><ellipse cx="23" cy="30" rx="4" ry="5.5" fill="#170b26"/><ellipse cx="41" cy="30" rx="4" ry="5.5" fill="#170b26"/><ellipse cx="32" cy="46" rx="6" ry="7" fill="#170b26"/></svg>
+</div>
+<div class="ghost" style="left:2%; top:55%; width:34px; animation-delay:.8s; animation-duration:6s;">
+  <svg viewBox="0 0 64 74" width="34"><path d="M32 2C15 2 4 16 4 34v30c3-3 7-3 10 0s7 3 10 0 7-3 10 0 7 3 10 0 7-3 10 0V34C60 16 49 2 32 2z" fill="#f3ead9" opacity="0.75"/><ellipse cx="23" cy="30" rx="4" ry="5.5" fill="#170b26"/><ellipse cx="41" cy="30" rx="4" ry="5.5" fill="#170b26"/><path d="M24 46q8 6 16 0" stroke="#170b26" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+</div>
+<div class="ghost" style="right:3%; top:48%; width:44px; animation-delay:2.6s; animation-duration:7.8s;">
+  <svg viewBox="0 0 64 74" width="44"><path d="M32 2C15 2 4 16 4 34v30c3-3 7-3 10 0s7 3 10 0 7-3 10 0 7 3 10 0 7-3 10 0V34C60 16 49 2 32 2z" fill="#f3ead9" opacity="0.8"/><ellipse cx="23" cy="30" rx="4" ry="5.5" fill="#170b26"/><ellipse cx="41" cy="30" rx="4" ry="5.5" fill="#170b26"/><ellipse cx="32" cy="46" rx="6" ry="7" fill="#170b26"/></svg>
+</div>
+<div class="ghost" style="left:18%; top:78%; width:30px; animation-delay:1.9s; animation-duration:9s;">
+  <svg viewBox="0 0 64 74" width="30"><path d="M32 2C15 2 4 16 4 34v30c3-3 7-3 10 0s7 3 10 0 7-3 10 0 7 3 10 0 7-3 10 0V34C60 16 49 2 32 2z" fill="#f3ead9" opacity="0.7"/><ellipse cx="23" cy="30" rx="4" ry="5.5" fill="#170b26"/><ellipse cx="41" cy="30" rx="4" ry="5.5" fill="#170b26"/><path d="M24 46q8 6 16 0" stroke="#170b26" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+</div>
+<div class="ghost" style="right:20%; top:70%; width:36px; animation-delay:3.4s; animation-duration:6.8s;">
+  <svg viewBox="0 0 64 74" width="36"><path d="M32 2C15 2 4 16 4 34v30c3-3 7-3 10 0s7 3 10 0 7-3 10 0 7 3 10 0 7-3 10 0V34C60 16 49 2 32 2z" fill="#f3ead9" opacity="0.8"/><ellipse cx="23" cy="30" rx="4" ry="5.5" fill="#170b26"/><ellipse cx="41" cy="30" rx="4" ry="5.5" fill="#170b26"/><ellipse cx="32" cy="46" rx="6" ry="7" fill="#170b26"/></svg>
+</div>
+
+<!-- Gato negro -->
+<div class="cat" style="left:4%; bottom:2%; width:70px;">
+  <svg viewBox="0 0 100 80" width="70">
+    <g fill="#0c0c0c">
+      <path d="M10 70 Q10 40 35 38 Q30 20 45 8 Q42 22 50 28 Q58 22 55 8 Q70 20 65 38 Q90 40 90 70 Q90 78 80 78 L20 78 Q10 78 10 70Z"/>
+      <polygon points="30,20 38,36 22,34"/>
+      <polygon points="70,20 78,34 62,36"/>
+    </g>
+    <circle cx="40" cy="50" r="2.5" fill="#ffb347"/>
+    <circle cx="60" cy="50" r="2.5" fill="#ffb347"/>
+  </svg>
+</div>
+
+<!-- Caldero -->
+<div class="cat" style="right:5%; bottom:1%; width:80px;">
+  <svg viewBox="0 0 120 100" width="80">
+    <ellipse cx="60" cy="60" rx="46" ry="14" fill="#1a1a1a"/>
+    <path d="M18 60 Q18 95 60 95 Q102 95 102 60 Z" fill="#151515" stroke="#000" stroke-width="2"/>
+    <path d="M14 55 Q60 46 106 55" stroke="#2a2a2a" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M35 55 Q60 20 85 55" stroke="#0c0c0c" stroke-width="3" fill="none"/>
+    <ellipse class="glow-eye" cx="60" cy="55" rx="30" ry="7" fill="#6bff6b" opacity="0.55"/>
+    <circle cx="45" cy="50" r="3" fill="#a5ff6b" opacity="0.8"/>
+    <circle cx="70" cy="48" r="2.4" fill="#a5ff6b" opacity="0.7"/>
+  </svg>
+</div>
+
+<div class="candy-border"></div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">Se busca con vida... o sin ella</div>
+    <h1 class="title"><%= event.tituloEvento %></h1>
+    <p class="subtitle">Disfraces, dulces, sustos y mucha diversión. Además celebramos que Guadalupe despide sus 20's 🎂</p>
+    <p class="host-line">🎂 Cumpleaños de <%= event.anfitriona %></p>
+  </div>
+
+  <div class="guest-banner">
+    <div class="hi">Esta invitación es para</div>
+    <div class="name">👻 <%= guest.nombre %></div>
+    <div class="passes">Tienes <%= guest.pases_asignados %> pase<%= guest.pases_asignados > 1 ? 's' : '' %> disponible<%= guest.pases_asignados > 1 ? 's' : '' %></div>
+  </div>
+
+  <div class="tombstone-wrap">
+    <button type="button" class="tombstone-btn" id="tombstone-btn" title="Toca para confirmar tu asistencia" aria-label="Ir al formulario de confirmación">
+      <svg viewBox="0 0 200 220" width="170">
+        <ellipse cx="100" cy="205" rx="90" ry="10" fill="#000" opacity="0.35"/>
+        <path d="M20 210 V90 Q20 15 100 15 Q180 15 180 90 V210 Z" fill="#8a8a8a" stroke="#5c5c5c" stroke-width="3"/>
+        <path d="M20 210 V90 Q20 15 100 15 Q180 15 180 90 V210 Z" fill="url(#stoneGrad)" opacity="0.5"/>
+        <defs><linearGradient id="stoneGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9c9c9"/><stop offset="100%" stop-color="#6b6b6b"/></linearGradient></defs>
+        <text x="100" y="60" text-anchor="middle" font-family="'Nosifer',cursive" font-size="30" fill="#2a2a2a">R.I.P.</text>
+        <line x1="45" y1="75" x2="155" y2="75" stroke="#4a4a4a" stroke-width="2"/>
+        <text x="100" y="102" text-anchor="middle" font-family="'Nunito',sans-serif" font-weight="800" font-size="15" fill="#333">AQUÍ YACEN</text>
+        <text x="100" y="124" text-anchor="middle" font-family="'Nunito',sans-serif" font-weight="800" font-size="19" fill="#222">MIS 20's</text>
+        <text x="100" y="148" text-anchor="middle" font-family="'Nunito',sans-serif" font-style="italic" font-size="12" fill="#444">Guadalupe R. Z.</text>
+        <text x="100" y="172" text-anchor="middle" font-family="'Nunito',sans-serif" font-size="11" fill="#4a4a4a">"Fueron buenos años"</text>
+        <path d="M35 170 q6 -14 12 0" stroke="#556b3a" stroke-width="2.5" fill="none"/>
+        <path d="M150 175 q7 -16 14 0" stroke="#556b3a" stroke-width="2.5" fill="none"/>
+      </svg>
+    </button>
+  </div>
+  <p class="tombstone-cta">👇 toca la lápida para confirmar tu entrada 👇</p>
+  <p class="hint">✨ hoy nacen los 30 ✨</p>
+
+
+  <div class="decor-row">
+    <!-- sombrero de bruja -->
+    <svg width="70" height="70" viewBox="0 0 100 90">
+      <ellipse cx="50" cy="78" rx="46" ry="9" fill="#1a1a2e"/>
+      <path d="M50 5 L78 68 L22 68 Z" fill="#241a3a" stroke="#150f24" stroke-width="2"/>
+      <ellipse cx="50" cy="68" rx="32" ry="7" fill="#2e2148"/>
+      <rect x="24" y="58" width="52" height="8" fill="#8c1620"/>
+      <circle cx="60" cy="62" r="4" fill="#ffb347"/>
+    </svg>
+    <!-- calabaza -->
+    <div class="pumpkin-wrap">
+      <div class="pumpkin" id="pumpkin" title="Toca la calabaza" style="cursor:pointer;">
+        <svg width="120" height="112" viewBox="0 0 140 130">
+          <ellipse cx="70" cy="72" rx="62" ry="50" fill="#ff7a1a" stroke="#c85a0a" stroke-width="3"/>
+          <ellipse cx="35" cy="72" rx="18" ry="46" fill="#e5670f" opacity="0.5"/>
+          <ellipse cx="105" cy="72" rx="18" ry="46" fill="#e5670f" opacity="0.5"/>
+          <path d="M70 24c-3-10 2-18 10-20-2 8-4 14-2 20z" fill="#3a7d2c"/>
+          <rect x="64" y="6" width="10" height="22" rx="4" fill="#5a3a1a"/>
+          <polygon points="40,58 58,58 46,76" fill="#ffd27a"/>
+          <polygon points="100,58 82,58 94,76" fill="#ffd27a"/>
+          <path d="M36 92 L48 82 L56 92 L64 82 L72 92 L80 82 L88 92 L100 92 L96 104 Q70 118 44 104 Z" fill="#ffd27a"/>
+        </svg>
+      </div>
+    </div>
+    <!-- fantasma pequeño -->
+    <svg viewBox="0 0 64 74" width="54"><path d="M32 2C15 2 4 16 4 34v30c3-3 7-3 10 0s7 3 10 0 7-3 10 0 7 3 10 0 7-3 10 0V34C60 16 49 2 32 2z" fill="#f3ead9"/><ellipse cx="23" cy="30" rx="4" ry="5.5" fill="#170b26"/><ellipse cx="41" cy="30" rx="4" ry="5.5" fill="#170b26"/><path d="M24 46q8 6 16 0" stroke="#170b26" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+  </div>
+
+  <div class="card">
+    <h2>Detalles del Velorio</h2>
+    <div class="details-grid">
+      <div class="detail"><div class="label">📅 Fecha</div><div class="value"><%= event.fechaTexto %></div></div>
+      <div class="detail"><div class="label">🕗 Hora</div><div class="value"><%= event.horaTexto %></div></div>
+      <div class="detail"><div class="label">📍 Lugar</div><div class="value"><%= event.lugarTexto %></div></div>
+      <div class="detail"><div class="label">🎂 Motivo</div><div class="value">Despido mis 20's, recibo los 30</div></div>
+    </div>
+    <a class="map-btn" href="<%= event.mapsUrl %>" target="_blank" rel="noopener">📍 Ver ubicación en Google Maps</a>
+    <div class="costume-notice">
+      🎃 <strong>Disfraz obligatorio</strong> — sin disfraz no hay entrada al panteón. Entre más terrorífico, mejor.
+    </div>
+
+    <div class="countdown" id="countdown">
+      <div class="cd-box"><div class="num" id="cd-days">--</div><div class="lbl">Días</div></div>
+      <div class="cd-box"><div class="num" id="cd-hours">--</div><div class="lbl">Horas</div></div>
+      <div class="cd-box"><div class="num" id="cd-mins">--</div><div class="lbl">Min</div></div>
+      <div class="cd-box"><div class="num" id="cd-secs">--</div><div class="lbl">Seg</div></div>
+    </div>
+  </div>
+
+  <div class="card rsvp" id="rsvp-card">
+    <% if (submitted || guest.estado !== 'pendiente') { %>
+      <h2>Confirma tu Asistencia</h2>
+      <div class="confirm">
+        <div class="icon">
+          <%= guest.estado === 'confirmado' ? '🦇' : guest.estado === 'tal-vez' ? '🕯️' : '☠️' %>
+        </div>
+        <h3>
+          <%= guest.estado === 'confirmado' ? '¡Confirmado!' : guest.estado === 'tal-vez' ? 'Anotado como "tal vez"' : 'Registrado que no podrás venir' %>
+        </h3>
+        <p>
+          <% if (guest.estado === 'confirmado') { %>
+            Nos vemos <%= guest.nombre %>, asistirán <%= guest.pases_confirmados %> de <%= guest.pases_asignados %> pase(s). ¡No olvides el disfraz!
+          <% } else if (guest.estado === 'tal-vez') { %>
+            Esperamos que los espíritus te dejen venir, <%= guest.nombre %>.
+          <% } else { %>
+            Tu ausencia se sentirá en el aquelarre, <%= guest.nombre %>. ¡Será en otra ocasión!
+          <% } %>
+        </p>
+        <span class="again" onclick="document.getElementById('rsvp-again').style.display='block'; this.style.display='none';">¿Necesitas cambiar tu respuesta?</span>
+      </div>
+
+      <div id="rsvp-again" style="display:none; margin-top:20px;">
+        <form id="rsvp-form" method="POST" action="/invite/<%= guest.code %>/rsvp">
+          <div class="field">
+            <label>¿Asistirás?</label>
+            <div class="choices">
+              <button type="button" class="choice-btn" data-value="confirmado">🎃 Sí, ahí estaré</button>
+              <button type="button" class="choice-btn" data-value="tal-vez">🕯️ Tal vez</button>
+              <button type="button" class="choice-btn" data-value="no-asiste">☠️ No podré</button>
+            </div>
+            <input type="hidden" name="estado" id="estado-input" required>
+          </div>
+          <div class="field" id="guests-field">
+            <label>¿Cuántos pases usarás? (máx. <%= guest.pases_asignados %>)</label>
+            <div class="stepper">
+              <button type="button" id="dec">−</button>
+              <span id="guests-count">1</span>
+              <button type="button" id="inc">+</button>
+            </div>
+            <input type="hidden" name="pases_confirmados" id="pases-input" value="1">
+          </div>
+          <div class="field">
+            <label>Mensaje</label>
+            <textarea name="mensaje" placeholder="Iré disfrazado de..."><%= guest.mensaje %></textarea>
+          </div>
+          <button type="submit" class="submit-btn">Actualizar respuesta</button>
+        </form>
+      </div>
+    <% } else { %>
+      <h2>Confirma tu Asistencia</h2>
+      <p class="sub">Las almas perdidas también deben confirmar 💀</p>
+      <form id="rsvp-form" method="POST" action="/invite/<%= guest.code %>/rsvp">
+        <div class="field">
+          <label>¿Asistirás?</label>
+          <div class="choices">
+            <button type="button" class="choice-btn" data-value="confirmado">🎃 Sí, ahí estaré</button>
+            <button type="button" class="choice-btn" data-value="tal-vez">🕯️ Tal vez</button>
+            <button type="button" class="choice-btn" data-value="no-asiste">☠️ No podré</button>
+          </div>
+          <input type="hidden" name="estado" id="estado-input" required>
+        </div>
+        <div class="field" id="guests-field">
+          <label>¿Cuántos pases usarás? (máx. <%= guest.pases_asignados %>)</label>
+          <div class="stepper">
+            <button type="button" id="dec">−</button>
+            <span id="guests-count">1</span>
+            <button type="button" id="inc">+</button>
+          </div>
+          <input type="hidden" name="pases_confirmados" id="pases-input" value="1">
+        </div>
+        <div class="field">
+          <label>Mensaje</label>
+          <textarea name="mensaje" placeholder="Iré disfrazado de..."></textarea>
+        </div>
+        <button type="submit" class="submit-btn">Confirmar asistencia</button>
+      </form>
+    <% } %>
+  </div>
+
+  <footer>🪦 R.I.P. mis 20's · bienvenidos los 30 🪦</footer>
+</div>
+
+<script>
+  const sky = document.getElementById('sky');
+  for(let i=0;i<50;i++){
+    const s = document.createElement('div');
+    s.className='star'; s.style.top=Math.random()*100+'vh'; s.style.left=Math.random()*100+'vw';
+    s.style.animationDelay=(Math.random()*3.5)+'s'; sky.appendChild(s);
+  }
+  for(let i=0;i<5;i++){
+    const b = document.createElement('div');
+    b.className='bat'; b.textContent='🦇'; b.style.top=(5+Math.random()*40)+'vh';
+    b.style.animationDuration=(14+Math.random()*10)+'s'; b.style.animationDelay=(Math.random()*8)+'s';
+    sky.appendChild(b);
+  }
+
+  document.getElementById('pumpkin')?.addEventListener('click', function(){
+    this.style.transform='scale(1.15) rotate(6deg)';
+    setTimeout(()=>{ this.style.transform=''; }, 220);
+  });
+
+  // ---------- Lápida como botón de entrada al RSVP ----------
+  document.getElementById('tombstone-btn')?.addEventListener('click', function(){
+    this.classList.remove('shake'); void this.offsetWidth; this.classList.add('shake');
+    const target = document.getElementById('rsvp-card');
+    if(target){ target.scrollIntoView({ behavior:'smooth', block:'center' }); }
+  });
+
+  // ---------- Truenos y relámpagos ----------
+  function strikeLightning(){
+    const flash = document.getElementById('lightning');
+    const bolt = document.getElementById('thunder-bolt');
+    bolt.style.right = (5 + Math.random()*70) + '%';
+    flash.classList.remove('active'); void flash.offsetWidth; flash.classList.add('active');
+    bolt.classList.remove('active'); void bolt.offsetWidth; bolt.classList.add('active');
+  }
+  function scheduleLightning(){
+    const delay = 6000 + Math.random()*9000; // entre 6 y 15 segundos
+    setTimeout(()=>{ strikeLightning(); scheduleLightning(); }, delay);
+  }
+  setTimeout(scheduleLightning, 2500);
+
+  const eventDate = new Date('<%= event.fechaISO %>');
+  function updateCountdown(){
+    const now = new Date();
+    let diff = eventDate - now;
+    if(diff < 0) diff = 0;
+    const d = Math.floor(diff/(1000*60*60*24));
+    const h = Math.floor((diff/(1000*60*60))%24);
+    const m = Math.floor((diff/(1000*60))%60);
+    const s = Math.floor((diff/1000)%60);
+    document.getElementById('cd-days').textContent = String(d).padStart(2,'0');
+    document.getElementById('cd-hours').textContent = String(h).padStart(2,'0');
+    document.getElementById('cd-mins').textContent = String(m).padStart(2,'0');
+    document.getElementById('cd-secs').textContent = String(s).padStart(2,'0');
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+
+  const maxPases = <%= guest.pases_asignados %>;
+  let guests = 1;
+  document.querySelectorAll('.choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active','tal-vez','no'));
+      btn.classList.add('active');
+      if(btn.dataset.value==='tal-vez') btn.classList.add('tal-vez');
+      if(btn.dataset.value==='no-asiste') btn.classList.add('no');
+      document.getElementById('estado-input').value = btn.dataset.value;
+      const guestsField = btn.closest('form').querySelector('#guests-field');
+      guestsField.style.display = btn.dataset.value === 'no-asiste' ? 'none' : 'block';
+    });
+  });
+  document.querySelectorAll('#inc').forEach(b=> b.addEventListener('click', ()=>{
+    guests = Math.min(guests+1, maxPases);
+    document.querySelectorAll('#guests-count').forEach(el=> el.textContent = guests);
+    document.querySelectorAll('#pases-input').forEach(el=> el.value = guests);
+  }));
+  document.querySelectorAll('#dec').forEach(b=> b.addEventListener('click', ()=>{
+    guests = Math.max(guests-1, 1);
+    document.querySelectorAll('#guests-count').forEach(el=> el.textContent = guests);
+    document.querySelectorAll('#pases-input').forEach(el=> el.value = guests);
+  }));
+
+  document.querySelectorAll('#rsvp-form').forEach(f=>{
+    f.addEventListener('submit', function(e){
+      if(!document.getElementById('estado-input').value){
+        e.preventDefault();
+        alert('Elige si asistirás, tal vez o no 🎃');
+      }
+    });
+  });
+</script>
+</body>
+</html>

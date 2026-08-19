@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Invitaciones — <%= event.tituloEvento %></title>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-void:#0a0611; --bg-deep:#170b26; --bg-panel:#1f0f30;
+    --pumpkin:#ff7a1a; --pumpkin-glow:#ffb347; --slime:#6bff6b;
+    --blood:#8c1620; --blood-bright:#d81f2f; --bone:#f3ead9; --bone-dim:#cfc3ae;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background: radial-gradient(ellipse at 50% -10%, #2a1440 0%, var(--bg-deep) 45%, var(--bg-void) 100%);
+    color:var(--bone); font-family:'Nunito',sans-serif; min-height:100vh; padding-bottom:60px;
+  }
+  header{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:22px 30px; border-bottom:1px solid rgba(255,122,26,0.2);
+  }
+  header h1{ font-family:'Creepster',cursive; font-weight:400; color:var(--pumpkin); font-size:26px; margin:0; }
+  header .sub{ font-size:12px; color:var(--bone-dim); }
+  header a.logout{ color:var(--bone-dim); text-decoration:none; font-size:13px; border:1px solid rgba(255,255,255,0.15); padding:8px 14px; border-radius:8px; }
+  header a.logout:hover{ border-color:var(--pumpkin); color:var(--bone); }
+
+  .wrap{ max-width:1000px; margin:0 auto; padding:30px 20px; }
+
+  .stats{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:32px; }
+  .stat{
+    background:var(--bg-panel); border:1px solid rgba(255,122,26,0.2); border-radius:12px; padding:16px;
+    text-align:center;
+  }
+  .stat .num{ font-size:26px; font-weight:800; color:var(--pumpkin-glow); }
+  .stat .lbl{ font-size:11px; color:var(--bone-dim); text-transform:uppercase; letter-spacing:.05em; margin-top:4px; }
+  @media (max-width:800px){ .stats{ grid-template-columns:repeat(2,1fr); } }
+
+  .card{
+    background:linear-gradient(180deg,var(--bg-panel),#150a24);
+    border:1px solid rgba(255,122,26,0.2); border-radius:16px; padding:24px; margin-bottom:26px;
+  }
+  .card h2{ font-size:16px; margin:0 0 16px; color:var(--pumpkin-glow); }
+
+  form.add-form{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  form.add-form .field{ flex:1; min-width:180px; }
+  form.add-form label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--slime); font-weight:800; margin-bottom:6px; }
+  form.add-form input{
+    width:100%; padding:11px 13px; border-radius:9px; background:rgba(0,0,0,0.35);
+    border:1px solid rgba(255,255,255,0.12); color:var(--bone); font-size:14px;
+  }
+  form.add-form input[type=number]{ width:110px; }
+  form.add-form button{
+    padding:12px 22px; border:none; border-radius:9px; cursor:pointer;
+    background:linear-gradient(180deg,var(--pumpkin),#c85a0a); color:#1a0700; font-weight:800; font-size:13px;
+  }
+
+  .toolbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  .toolbar input#search{
+    padding:10px 14px; border-radius:8px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.12);
+    color:var(--bone); font-size:13px; width:240px;
+  }
+  .toolbar a.export{
+    color:var(--bone); text-decoration:none; font-size:12px; border:1px solid rgba(255,255,255,0.15);
+    padding:9px 16px; border-radius:8px; white-space:nowrap;
+  }
+  .toolbar a.export:hover{ border-color:var(--slime); }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th{ text-align:left; padding:10px 8px; color:var(--slime); font-size:11px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid rgba(255,255,255,0.1); }
+  td{ padding:12px 8px; border-bottom:1px solid rgba(255,255,255,0.06); vertical-align:middle; }
+  tr.hidden{ display:none; }
+
+  .badge{ display:inline-block; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; }
+  .badge.pendiente{ background:rgba(255,255,255,0.08); color:var(--bone-dim); }
+  .badge.confirmado{ background:rgba(107,255,107,0.15); color:var(--slime); }
+  .badge.tal-vez{ background:rgba(255,179,71,0.15); color:var(--pumpkin-glow); }
+  .badge.no-asiste{ background:rgba(216,31,47,0.15); color:var(--blood-bright); }
+
+  .actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .actions button, .actions a{
+    border:none; border-radius:6px; padding:7px 10px; font-size:11px; cursor:pointer; text-decoration:none;
+    font-weight:700; display:inline-flex; align-items:center; gap:4px;
+  }
+  .btn-copy{ background:rgba(255,255,255,0.08); color:var(--bone); }
+  .btn-wa{ background:#25D366; color:#062112; }
+  .btn-del{ background:rgba(216,31,47,0.15); color:var(--blood-bright); }
+  .btn-copy:hover, .btn-wa:hover{ opacity:0.85; }
+
+  .empty{ text-align:center; padding:40px 0; color:var(--bone-dim); font-size:14px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🎃 Panel de Invitaciones</h1>
+    <div class="sub"><%= event.tituloEvento %> · <%= event.anfitriona %> · <%= event.fechaTexto %></div>
+  </div>
+  <a class="logout" href="/admin/logout">Cerrar sesión</a>
+</header>
+
+<div class="wrap">
+
+  <div class="stats">
+    <div class="stat"><div class="num"><%= stats.totalInvitados %></div><div class="lbl">Invitados</div></div>
+    <div class="stat"><div class="num"><%= stats.totalPasesAsignados %></div><div class="lbl">Pases asignados</div></div>
+    <div class="stat"><div class="num"><%= stats.confirmadosPersonas %> / <%= stats.confirmadosPases %></div><div class="lbl">Confirmados (pases)</div></div>
+    <div class="stat"><div class="num"><%= stats.pendientesPersonas %></div><div class="lbl">Pendientes</div></div>
+    <div class="stat"><div class="num"><%= stats.noAsistenPersonas %></div><div class="lbl">No asisten</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Agregar invitado</h2>
+    <form class="add-form" method="POST" action="/admin/guests">
+      <div class="field">
+        <label>Nombre del invitado</label>
+        <input type="text" name="nombre" placeholder="Ej. Familia Pérez" required>
+      </div>
+      <div class="field" style="flex:0;">
+        <label>Pases</label>
+        <input type="number" name="pases_asignados" min="1" max="20" value="2" required>
+      </div>
+      <button type="submit">+ Generar invitación</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <h2 style="margin:0;">Lista de invitados</h2>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <input type="text" id="search" placeholder="Buscar por nombre...">
+        <a class="export" href="/admin/export.csv">⬇ Exportar CSV</a>
+      </div>
+    </div>
+
+    <% if (guests.length === 0) { %>
+      <div class="empty">Aún no has agregado invitados. Usa el formulario de arriba 👆</div>
+    <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Pases</th>
+          <th>Estado</th>
+          <th>Confirmados</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="guest-table-body">
+        <% guests.forEach(g => { %>
+        <tr data-name="<%= g.nombre.toLowerCase() %>">
+          <td><strong><%= g.nombre %></strong><% if (g.mensaje) { %><br><span style="color:var(--bone-dim); font-size:11px;">💬 <%= g.mensaje %></span><% } %></td>
+          <td><%= g.pases_asignados %></td>
+          <td><span class="badge <%= g.estado %>"><%=
+            g.estado === 'pendiente' ? 'Pendiente' :
+            g.estado === 'confirmado' ? 'Confirmado' :
+            g.estado === 'tal-vez' ? 'Tal vez' : 'No asiste'
+          %></span></td>
+          <td><%= g.estado === 'no-asiste' ? '—' : g.pases_confirmados %></td>
+          <td class="actions">
+            <button type="button" class="btn-copy" data-link="<%= baseUrl %>/invite/<%= g.code %>">🔗 Copiar</button>
+            <a class="btn-wa" target="_blank" href="https://wa.me/?text=<%= encodeURIComponent('Hola ' + g.nombre + '! Estás invitado(a) a mi despedida de mis 20\'s 🎃🪦 Aquí tu invitación con tus ' + g.pases_asignados + ' pase(s): ' + baseUrl + '/invite/' + g.code) %>">📱 WhatsApp</a>
+            <form method="POST" action="/admin/guests/<%= g.id %>/delete" onsubmit="return confirm('¿Eliminar a <%= g.nombre %>?');" style="display:inline;">
+              <button type="submit" class="btn-del">🗑</button>
+            </form>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  document.getElementById('search')?.addEventListener('input', function(){
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#guest-table-body tr').forEach(row=>{
+      row.classList.toggle('hidden', !row.dataset.name.includes(q));
+    });
+  });
+
+  document.querySelectorAll('.btn-copy').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      navigator.clipboard.writeText(this.dataset.link).then(()=>{
+        const original = this.textContent;
+        this.textContent = '✔ Copiado';
+        setTimeout(()=>{ this.textContent = original; }, 1500);
+      });
+    });
+  });
+</script>
+</body>
+</html>
