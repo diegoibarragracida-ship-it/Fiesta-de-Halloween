@@ -95,7 +95,36 @@ const EVENT = {
    en tiempo real en el panel (Confirmado / Tal vez / No asiste) junto con
    cuántos de sus pases va a usar.
 
-## Desplegar en Render (igual que tus otros proyectos)
+## Desplegar en Render con Blueprint (crea todo junto, ya conectado)
+
+Este proyecto incluye `render.yaml`, que le dice a Render que cree el Web
+Service **y** la base de datos PostgreSQL al mismo tiempo, ya vinculados
+entre sí — no tienes que copiar ningún connection string a mano.
+
+1. Sube el proyecto (con `render.yaml` incluido) a GitHub.
+2. En el Dashboard de Render: **New + → Blueprint**.
+3. Selecciona tu repo `Fiesta-de-Halloween`. Render detecta el
+   `render.yaml` automáticamente y te muestra un preview: un Web Service
+   llamado `fiesta-de-halloween` y una base `fiesta-halloween-db`.
+4. Antes de aplicar, Render te va a pedir los valores de las variables
+   marcadas como `sync: false` (no se pueden generar solas, son tuyas):
+   - `ADMIN_PASSWORD`: la contraseña que quieras para el panel.
+   - `BASE_URL`: déjala vacía por ahora, la agregas después de que
+     Render te dé la URL final (o pon algo temporal y la corriges luego
+     en Environment).
+5. Click en **Apply** — Render crea ambos servicios, los conecta
+   (`DATABASE_URL` se llena solo) y despliega. Tarda unos minutos.
+6. Cuando termine, entra a `tu-url.onrender.com/admin/login` con la
+   contraseña que pusiste.
+
+Con este método, `DATABASE_URL` queda **vinculada** a la base (no pegada
+como texto fijo), así que si la base cambia de host interno en el futuro,
+Render la actualiza sola sin que tengas que tocar nada.
+
+### Despliegue manual (alternativa sin Blueprint)
+
+Si prefieres crear cada servicio por separado (como hiciste con tus otros
+proyectos), sigue estos pasos en vez del Blueprint:
 
 1. Sube esta carpeta a un repo de GitHub.
 2. En Render: New → Web Service → conecta el repo.

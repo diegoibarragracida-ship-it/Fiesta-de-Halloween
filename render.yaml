@@ -1,0 +1,26 @@
+databases:
+  - name: fiesta-halloween-db
+    databaseName: fiesta_halloween
+    user: fiesta_halloween_user
+    plan: free
+    region: oregon
+
+services:
+  - type: web
+    name: fiesta-de-halloween
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: BASE_URL
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fiesta-halloween-db
+          property: connectionString
