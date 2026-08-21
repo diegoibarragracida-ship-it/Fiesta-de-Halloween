@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= event.tituloEvento %> — Invitación de <%= guest.nombre %></title>
 <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.7.1/dist/dotlottie-wc.js" type="module"></script>
 <style>
   :root{
     --bg-void:#0a0611; --bg-deep:#170b26; --bg-panel:#1f0f30;
@@ -267,25 +268,13 @@
   .entry-tombstone-btn:hover{ transform: translateY(-4px) scale(1.03); filter: drop-shadow(0 18px 32px rgba(0,0,0,0.6)) drop-shadow(0 0 22px rgba(255,122,26,0.4)); }
   .entry-tombstone-btn:active{ transform: translateY(2px) scale(0.97) rotate(-1deg); }
   .entry-tombstone-btn.shake{ animation: tombstone-shake .5s ease; }
-  .entry-photo{
+  .invite-photo{
     width:150px; height:150px; object-fit:cover; border-radius:50%;
     border:4px solid #ff7a1a; box-shadow:0 0 0 6px rgba(0,0,0,0.55), 0 10px 26px rgba(0,0,0,0.6), 0 0 30px rgba(255,122,26,0.45);
-    margin-bottom:14px;
+    margin:0 auto 18px; display:block;
   }
   @media (max-width:480px){
-    .entry-photo{ width:120px; height:120px; }
-  }
-  .entry-music{
-    margin-top:18px;
-    display:flex; flex-direction:column; align-items:center; gap:8px;
-  }
-  .entry-music-label{
-    font-family:'Nunito',sans-serif; font-weight:800; font-size:13px;
-    letter-spacing:.5px; color:#ff7a1a; text-shadow:0 0 10px rgba(255,122,26,0.5);
-  }
-  .entry-music audio{
-    width:230px; max-width:70vw; height:34px; border-radius:20px;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+    .invite-photo{ width:120px; height:120px; }
   }
   .main-content{ opacity:0; transition: opacity .5s ease; }
   .main-content.revealed{ opacity:1; }
@@ -327,7 +316,6 @@
 <body>
 
 <div class="entry-screen" id="entry-screen">
-  <img src="/images/guadalupe-brujita.png" alt="Guadalupe" class="entry-photo">
   <div class="entry-eyebrow">Dulce, travesura… ¡y una noche para recordar!</div>
   <h1 class="entry-title"><%= event.tituloEvento %></h1>
   <svg width="64" height="80" viewBox="0 0 100 130" style="margin:-10px 0 18px; filter:drop-shadow(0 6px 10px rgba(0,0,0,0.5));">
@@ -356,10 +344,7 @@
   </button>
   <p class="tombstone-cta">👇 toca la lápida para entrar 👇</p>
 
-  <div class="entry-music">
-    <span class="entry-music-label">🎵 Monster Mash</span>
-    <audio id="party-music" src="/audio/monster-mash.mp3" loop preload="auto" autoplay controls></audio>
-  </div>
+  <audio id="party-music" src="/audio/monster-mash.mp3" loop preload="auto" autoplay></audio>
 </div>
 
 <div class="main-content" id="main-content">
@@ -523,6 +508,10 @@
   </div>
   <p class="tombstone-cta">👇 toca la lápida para confirmar tu entrada 👇</p>
   <p class="hint">✨ hoy nacen los 30 ✨</p>
+
+  <img src="/images/guadalupe-brujita.png" alt="Guadalupe" class="invite-photo">
+
+  <dotlottie-wc src="https://assets4.lottiefiles.com/packages/lf20_hIJVaT.json" speed="1" style="width: 300px; height: 300px; max-width: 80vw; margin: 0 auto; display: block;" mode="forward" loop autoplay></dotlottie-wc>
 
 
   <div class="decor-row" style="gap:14px; flex-wrap:wrap;">
