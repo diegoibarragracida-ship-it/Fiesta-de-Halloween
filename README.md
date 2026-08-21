@@ -34,36 +34,23 @@ npm start
 Abre `http://localhost:3000/admin/login` con la contraseña que pusiste en
 `.env`.
 
-## Base de datos: PostgreSQL
+## Base de datos: MongoDB
 
-El proyecto guarda todo en PostgreSQL (tabla `guests`, se crea sola la
-primera vez que arranca el servidor — no hay que correr ningún script de
-migración a mano).
-
-### En Render (recomendado)
-
-1. En el Dashboard de Render: **New → PostgreSQL**. Dale un nombre (ej.
-   `fiesta-halloween-db`) y crea la base. Render te da un mes gratis y
-   luego cobra un plan chico si la quieres conservar.
-2. Cuando esté lista, copia el **"Internal Database URL"** (si tu Web
-   Service y la base están en la misma región de Render, es más rápido
-   que la External URL).
-3. En tu Web Service (el de este proyecto) → pestaña **Environment** →
-   agrega la variable `DATABASE_URL` con ese valor.
-4. Haz un **Manual Deploy** o simplemente vuelve a hacer push — al
-   arrancar, el servidor crea la tabla `guests` automáticamente.
-
-Con esto, tus invitados y sus confirmaciones sobreviven cualquier
-redeploy, reinicio o cambio de código futuro — ya no dependen del disco
-del contenedor.
+El proyecto guarda todo en MongoDB (colección `halloween_guests`, se
+crea sola la primera vez que arranca el servidor — no hay que correr
+ningún script de migración a mano).
 
 ### En local (para probar)
 
-Instala Postgres o usa un contenedor Docker, luego en tu `.env`:
+En tu `.env`:
 
 ```
-DATABASE_URL=postgres://usuario:password@localhost:5432/nombre_bd
+MONGODB_URI=mongodb+srv://usuario:password@cluster.mongodb.net/halloween-invite
 ```
+
+Puedes usar el mismo clúster de MongoDB Atlas que ya tienes para tus
+otros proyectos — solo cambia el nombre de la base de datos al final de
+la URL (aquí `halloween-invite`) para no mezclar colecciones.
 
 ## Editar los datos del evento
 
@@ -95,69 +82,57 @@ const EVENT = {
    en tiempo real en el panel (Confirmado / Tal vez / No asiste) junto con
    cuántos de sus pases va a usar.
 
-## Desplegar en Render con Blueprint (crea todo junto, ya conectado)
+## Desplegar en Render usando tu clúster de MongoDB Atlas ya existente
 
-Este proyecto incluye `render.yaml`, que le dice a Render que cree el Web
-Service **y** la base de datos PostgreSQL al mismo tiempo, ya vinculados
-entre sí — no tienes que copiar ningún connection string a mano.
-
-1. Sube el proyecto (con `render.yaml` incluido) a GitHub.
-2. En el Dashboard de Render: **New + → Blueprint**.
-3. Selecciona tu repo `Fiesta-de-Halloween`. Render detecta el
-   `render.yaml` automáticamente y te muestra un preview: un Web Service
-   llamado `fiesta-de-halloween` y una base `fiesta-halloween-db`.
-4. Antes de aplicar, Render te va a pedir los valores de las variables
-   marcadas como `sync: false` (no se pueden generar solas, son tuyas):
-   - `ADMIN_PASSWORD`: la contraseña que quieras para el panel.
-   - `BASE_URL`: déjala vacía por ahora, la agregas después de que
-     Render te dé la URL final (o pon algo temporal y la corriges luego
-     en Environment).
-5. Click en **Apply** — Render crea ambos servicios, los conecta
-   (`DATABASE_URL` se llena solo) y despliega. Tarda unos minutos.
-6. Cuando termine, entra a `tu-url.onrender.com/admin/login` con la
-   contraseña que pusiste.
-
-Con este método, `DATABASE_URL` queda **vinculada** a la base (no pegada
-como texto fijo), así que si la base cambia de host interno en el futuro,
-Render la actualiza sola sin que tengas que tocar nada.
-
-### Despliegue manual (alternativa sin Blueprint)
-
-Si prefieres crear cada servicio por separado (como hiciste con tus otros
-proyectos), sigue estos pasos en vez del Blueprint:
+Este proyecto está configurado para reutilizar tu clúster de MongoDB
+Atlas que ya tienes corriendo (el mismo de tus otros proyectos) — no se
+crea ninguna base nueva. La colección de esta app se llama
+`halloween_guests` dentro de una base de datos separada
+(`halloween-invite`), así que convive sin problema con las colecciones
+de tu otro proyecto en ese mismo clúster.
 
 1. Sube esta carpeta a un repo de GitHub.
-2. En Render: New → Web Service → conecta el repo.
-3. Build command: `npm install`
-4. Start command: `npm start`
-5. En "Environment", agrega las variables `ADMIN_PASSWORD`,
-   `SESSION_SECRET`, `DATABASE_URL` (ver sección "Base de datos" arriba)
-   y opcionalmente `BASE_URL` (la URL pública que te da Render, para que
-   los links generados en el panel sean correctos).
+2. En MongoDB Atlas, entra a tu clúster existente → **Connect** → **Drivers**
+   → copia el connection string (`mongodb+srv://...`). Al final de la
+   URL, después de la última `/`, agrega el nombre de base de datos
+   `halloween-invite` (ej. `.../halloween-invite?retryWrites=true...`).
+3. Verifica en **Network Access** de Atlas que la IP `0.0.0.0/0` esté
+   permitida (o agrega la de Render), para que el Web Service pueda
+   conectarse.
+4. En Render: **New → Web Service** → conecta este repo.
+5. Build command: `npm install` · Start command: `npm start`
+6. En "Environment", agrega:
+   - `MONGODB_URI`: el connection string que armaste en el paso 2.
+   - `ADMIN_PASSWORD`: la contraseña que quieras para el panel.
+   - `SESSION_SECRET`: cualquier texto largo aleatorio.
+   - `BASE_URL`: la URL pública que Render te asigna a este servicio
+     (para que los links generados en el panel sean correctos). Puedes
+     dejarla vacía en el primer deploy y agregarla después.
+7. Deploy. Al arrancar, el servidor crea la colección `halloween_guests`
+   en tu base `halloween-invite` automáticamente — no toca ni borra
+   nada de tus otros proyectos en ese clúster.
 
 ### Sobre los datos
 
-Con `DATABASE_URL` configurado, los invitados se guardan en PostgreSQL y
-sobreviven redeploys sin problema — no necesitas hacer nada especial.
-
-Si en algún momento decides NO usar Postgres y correr solo con el disco
-local (no recomendado para producción), ten en cuenta que en el plan Free
-de Render el disco no es persistente entre deploys — cada push puede
-borrar los datos.
+Con `MONGODB_URI` apuntando a tu clúster existente, los invitados
+sobreviven redeploys, reinicios y no dependen del disco del contenedor.
+Recuerda lo que ya aprendiste con tu clúster: los clústeres M0 gratis se
+pueden pausar por inactividad, así que si el panel lleva tiempo sin
+recibir tráfico antes de la fiesta, entra a Atlas para reanudarlo si
+hace falta.
 
 ## Estructura
 
 ```
 panel-invitaciones-halloween/
 ├── server.js          Rutas y configuración del evento
-├── db.js              Lógica de datos (JSON local)
+├── db.js              Lógica de datos (MongoDB / Mongoose)
 ├── views/
 │   ├── login.ejs       Login del admin
 │   ├── panel.ejs        Dashboard de gestión
 │   ├── invite.ejs        Invitación pública + RSVP
 │   └── not-found.ejs      Link inválido
-├── data/
-│   └── db.json          Se crea automáticamente
 ├── package.json
+├── render.yaml
 └── .env.example
 ```

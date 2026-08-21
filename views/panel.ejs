@@ -74,7 +74,6 @@
   .badge{ display:inline-block; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; }
   .badge.pendiente{ background:rgba(255,255,255,0.08); color:var(--bone-dim); }
   .badge.confirmado{ background:rgba(107,255,107,0.15); color:var(--slime); }
-  .badge.tal-vez{ background:rgba(255,179,71,0.15); color:var(--pumpkin-glow); }
   .badge.no-asiste{ background:rgba(216,31,47,0.15); color:var(--blood-bright); }
 
   .actions{ display:flex; gap:6px; flex-wrap:wrap; }
@@ -88,6 +87,25 @@
   .btn-copy:hover, .btn-wa:hover{ opacity:0.85; }
 
   .empty{ text-align:center; padding:40px 0; color:var(--bone-dim); font-size:14px; }
+
+  .table-scroll{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table{ min-width:640px; }
+
+  @media (max-width:640px){
+    header{ padding:16px 18px; flex-wrap:wrap; gap:10px; }
+    .wrap{ padding:20px 14px; }
+    .stats{ grid-template-columns:repeat(2,1fr); gap:10px; }
+    .card{ padding:18px 16px; }
+    .toolbar{ flex-direction:column; align-items:stretch; }
+    .toolbar > div{ flex-wrap:wrap; }
+    .toolbar input#search{ width:100%; flex:1; min-width:0; }
+    form.add-form{ flex-direction:column; align-items:stretch; }
+    form.add-form .field{ min-width:0; }
+  }
+  @media (max-width:380px){
+    .stats{ grid-template-columns:1fr 1fr; }
+    .stat .num{ font-size:22px; }
+  }
 </style>
 </head>
 <body>
@@ -136,6 +154,7 @@
     <% if (guests.length === 0) { %>
       <div class="empty">Aún no has agregado invitados. Usa el formulario de arriba 👆</div>
     <% } else { %>
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
@@ -153,8 +172,7 @@
           <td><%= g.pases_asignados %></td>
           <td><span class="badge <%= g.estado %>"><%=
             g.estado === 'pendiente' ? 'Pendiente' :
-            g.estado === 'confirmado' ? 'Confirmado' :
-            g.estado === 'tal-vez' ? 'Tal vez' : 'No asiste'
+            g.estado === 'confirmado' ? 'Confirmado' : 'No asiste'
           %></span></td>
           <td><%= g.estado === 'no-asiste' ? '—' : g.pases_confirmados %></td>
           <td class="actions">
@@ -168,6 +186,7 @@
         <% }) %>
       </tbody>
     </table>
+    </div>
     <% } %>
   </div>
 </div>

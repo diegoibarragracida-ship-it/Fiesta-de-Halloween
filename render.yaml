@@ -1,10 +1,3 @@
-databases:
-  - name: fiesta-halloween-db
-    databaseName: fiesta_halloween
-    user: fiesta_halloween_user
-    plan: free
-    region: oregon
-
 services:
   - type: web
     name: fiesta-de-halloween
@@ -20,7 +13,8 @@ services:
         generateValue: true
       - key: BASE_URL
         sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: fiesta-halloween-db
-          property: connectionString
+      - key: MONGODB_URI
+        sync: false
+        # Pega aquí el connection string de tu clúster de MongoDB Atlas
+        # ya existente (el mismo de tus otros proyectos), con un nombre
+        # de base de datos distinto al final de la URL, ej. "/halloween-invite".

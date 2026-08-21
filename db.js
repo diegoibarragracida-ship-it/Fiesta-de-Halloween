@@ -99,7 +99,6 @@ module.exports = {
   async getStats() {
     const guests = await this.getAllGuests();
     const confirmados = guests.filter((g) => g.estado === 'confirmado');
-    const talVez = guests.filter((g) => g.estado === 'tal-vez');
     const noAsisten = guests.filter((g) => g.estado === 'no-asiste');
     const pendientes = guests.filter((g) => g.estado === 'pendiente');
 
@@ -111,7 +110,6 @@ module.exports = {
         (s, g) => s + g.pases_confirmados,
         0
       ),
-      talVezPersonas: talVez.length,
       noAsistenPersonas: noAsisten.length,
       pendientesPersonas: pendientes.length,
     };

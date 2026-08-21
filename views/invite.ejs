@@ -6,7 +6,6 @@
 <title><%= event.tituloEvento %> — Invitación de <%= guest.nombre %></title>
 <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-<script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.7.1/dist/dotlottie-wc.js" type="module"></script>
 <style>
   :root{
     --bg-void:#0a0611; --bg-deep:#170b26; --bg-panel:#1f0f30;
@@ -269,6 +268,18 @@
   .entry-tombstone-btn:hover{ transform: translateY(-4px) scale(1.03); filter: drop-shadow(0 18px 32px rgba(0,0,0,0.6)) drop-shadow(0 0 22px rgba(255,122,26,0.4)); }
   .entry-tombstone-btn:active{ transform: translateY(2px) scale(0.97) rotate(-1deg); }
   .entry-tombstone-btn.shake{ animation: tombstone-shake .5s ease; }
+  .entry-music{
+    margin-top:18px;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  .entry-music-label{
+    font-family:'Nunito',sans-serif; font-weight:800; font-size:13px;
+    letter-spacing:.5px; color:#ff7a1a; text-shadow:0 0 10px rgba(255,122,26,0.5);
+  }
+  .entry-music audio{
+    width:230px; max-width:70vw; height:34px; border-radius:20px;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+  }
   .main-content{ opacity:0; transition: opacity .5s ease; }
   .main-content.revealed{ opacity:1; }
 
@@ -301,7 +312,7 @@
 <body>
 
 <div class="entry-screen" id="entry-screen">
-  <div class="entry-eyebrow">Se busca con vida... o sin ella</div>
+  <div class="entry-eyebrow">Dulce, travesura… ¡y una noche para recordar!</div>
   <h1 class="entry-title"><%= event.tituloEvento %></h1>
   <svg width="64" height="80" viewBox="0 0 100 130" style="margin:-10px 0 18px; filter:drop-shadow(0 6px 10px rgba(0,0,0,0.5));">
     <ellipse cx="50" cy="122" rx="38" ry="6" fill="#000" opacity="0.25"/>
@@ -328,6 +339,11 @@
     </svg>
   </button>
   <p class="tombstone-cta">👇 toca la lápida para entrar 👇</p>
+
+  <div class="entry-music">
+    <span class="entry-music-label">🎵 Monster Mash</span>
+    <audio id="party-music" src="/audio/monster-mash.mp3" loop preload="none" controls></audio>
+  </div>
 </div>
 
 <div class="main-content" id="main-content">
@@ -459,7 +475,7 @@
   <div class="hero">
     <svg class="claw-marks" style="top:-10px; left:2%; width:120px; transform:rotate(-8deg);" viewBox="0 0 200 120"><path d="M10 10 L60 100" stroke="#d81f2f" stroke-width="7" stroke-linecap="round"/><path d="M40 5 L95 95" stroke="#d81f2f" stroke-width="7" stroke-linecap="round"/><path d="M70 0 L130 90" stroke="#d81f2f" stroke-width="7" stroke-linecap="round"/></svg>
     <svg class="claw-marks" style="bottom:-6px; right:2%; width:100px; transform:rotate(172deg);" viewBox="0 0 200 120"><path d="M10 10 L60 100" stroke="#d81f2f" stroke-width="7" stroke-linecap="round"/><path d="M40 5 L95 95" stroke="#d81f2f" stroke-width="7" stroke-linecap="round"/><path d="M70 0 L130 90" stroke="#d81f2f" stroke-width="7" stroke-linecap="round"/></svg>
-    <div class="eyebrow">Se busca con vida... o sin ella</div>
+    <div class="eyebrow">Dulce, travesura… ¡y una noche para recordar!</div>
     <h1 class="title"><%= event.tituloEvento %></h1>
     <p class="subtitle">Después de 10 años de experiencias inolvidables, decisiones cuestionables y aventuras, mis 20 han fallecido oficialmente. Te invito a despedirlos como se debe. R.I.P. my 20's 🪦</p>
     <p class="host-line">🎂 Cumpleaños de <%= event.anfitriona %></p>
@@ -491,9 +507,6 @@
   </div>
   <p class="tombstone-cta">👇 toca la lápida para confirmar tu entrada 👇</p>
   <p class="hint">✨ hoy nacen los 30 ✨</p>
-  <div style="display:flex; justify-content:center;">
-    <dotlottie-wc src="https://assets4.lottiefiles.com/packages/lf20_hIJVaT.json" speed="1" style="width: 300px; height: 300px" mode="forward" loop autoplay></dotlottie-wc>
-  </div>
 
 
   <div class="decor-row" style="gap:14px; flex-wrap:wrap;">
@@ -667,6 +680,8 @@
   document.documentElement.classList.add('locked');
   document.getElementById('entry-tombstone-btn')?.addEventListener('click', function(){
     this.classList.remove('shake'); void this.offsetWidth; this.classList.add('shake');
+    const music = document.getElementById('party-music');
+    if (music) { music.play().catch(()=>{ /* el navegador bloqueó el autoplay, el usuario puede darle play manual */ }); }
     setTimeout(()=>{
       document.getElementById('entry-screen').classList.add('hidden');
       document.getElementById('main-content').classList.add('revealed');
